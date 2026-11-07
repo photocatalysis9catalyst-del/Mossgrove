@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mossgrove: Bolt’s Garden</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E6EEE8;--panel:#F6FAF7;--ink:#1D2842;--mute:#55627A;--acc:#5B3C9E;--accink:#fff;--moss:#3F7F52;--amber:#E2A32B;--line:#C3D1C8;--bad:#B3392F;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17213A;--panel:#202C4B;--ink:#E7EDF8;--mute:#A4B1CC;--acc:#B79BF2;--accink:#17213A;--moss:#7CC48F;--amber:#F0BA4B;--line:#364468;--bad:#FF8E84}}
+:root[data-theme="dark"]{--bg:#17213A;--panel:#202C4B;--ink:#E7EDF8;--mute:#A4B1CC;--acc:#B79BF2;--accink:#17213A;--moss:#7CC48F;--amber:#F0BA4B;--line:#364468;--bad:#FF8E84}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Atkinson Hyperlegible",system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+h1,h2{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0;line-height:1.15}
+h1{font-size:30px;font-weight:800}h2{font-size:22px;font-weight:800}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.dots{display:flex;gap:6px}.dots i{width:30px;height:8px;border-radius:4px;background:var(--line)}.dots i.on{background:var(--moss)}.dots i.cur{background:var(--amber)}
+.story{margin:18px 0;padding:16px 18px;border-left:5px solid var(--amber);background:var(--panel);border-radius:0 12px 12px 0}
+.story p{margin:0 0 8px}.story p:last-child{margin:0}
+.concept{font-size:15px;color:var(--mute)}.concept b{color:var(--ink)}
+.garden{display:flex;gap:6px;justify-content:center;padding:26px 10px 14px;background:var(--panel);border:2px solid var(--line);border-radius:16px;overflow-x:auto}
+.plot{flex:0 0 64px;text-align:center;position:relative;padding-top:30px}
+.plot .g{font-size:34px;line-height:48px;height:50px;background:color-mix(in srgb,var(--moss) 18%,transparent);border-radius:10px}
+.plot .w{font-size:13px;color:var(--mute);height:20px}
+.bolt{position:absolute;top:0;left:0;right:0;font-size:26px;transition:none}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+@media(max-width:600px){.cols{grid-template-columns:1fr}}
+.box{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px}
+.box h3{margin:0 0 8px;font:700 15px "Atkinson Hyperlegible",sans-serif;color:var(--mute)}
+.tool{display:flex;gap:6px;margin-bottom:6px}
+button,select{font:inherit;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink);padding:8px 10px;cursor:pointer}
+.tool button{flex:1;text-align:left}
+button:hover{border-color:var(--acc)}button:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+button.go{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:700}
+button:disabled{opacity:.5;cursor:default}
+.prog{min-height:120px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px}
+.ln{padding:3px 8px;border-radius:6px;margin-bottom:2px}.ln.hi{background:var(--amber);color:#1D2842}
+.empty{color:var(--mute);font-family:inherit}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.msg{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--panel);border:2px solid var(--line);min-height:50px}
+.msg.ok{border-color:var(--moss)}.msg.bad{border-color:var(--bad)}
+.lim{font-size:14px;color:var(--mute);margin-top:6px}
+@media(prefers-reduced-motion:no-preference){.garden .g{transition:background .2s}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><h1>Mossgrove</h1><div class="dots" id="dots" aria-label="Chapter progress"></div></div>
+  <div class="story" id="story"></div>
+  <div class="garden" id="garden" role="img" aria-label="Garden plots"></div>
+  <div class="cols">
+    <div class="box"><h3>Bolt’s commands</h3><div id="tools"></div></div>
+    <div class="box"><h3>Your program for Bolt</h3><div class="prog" id="prog"></div>
+      <div class="row"><button class="go" id="run">Run program</button><button id="undo">Undo</button><button id="clear">Clear</button></div>
+      <div class="lim" id="lim"></div></div>
+  </div>
+  <div class="msg" id="msg"></div>
+  <div class="row"><button id="hint">Need a hint?</button><button id="next" class="go" hidden>Next chapter</button></div>
+</main>
+<script>
+const LV=[
+{t:"Chapter 1: The Counting Can",
+ story:["Old Moss the gardener has gone to find his glasses, and he left a clockwork apprentice named Bolt in charge. Bolt does exactly what you tell it, nothing more.","Today’s job: plant one seed and give it exactly 3 drops of water. Bolt’s watering can has a label called <b>drops</b>. Each time Bolt pours, it pours that many."],
+ concept:"<b>Variable:</b> a labeled box that holds a value. Here, <b>drops</b> holds a number. Change the box and every pour changes with it.",
+ plots:[{}],tools:["plant","set","water"],max:3,
+ goal:s=>s.plots[0].seed&&s.plots[0].water==3,
+ hint:"Set drops to 3 first, then plant, then pour once. Use only 3 lines.",
+ win:"The seedling drinks it all in. “Three drops. Perfect.” Moss would be proud."},
+{t:"Chapter 2: The Long Row",
+ story:["Moss returns, squinting through crooked glasses, and points at a row of five empty plots. “Plant them all. Quickly now!”","Bolt could take ten separate commands, but there’s a rule in the shed: no more than 4 lines per job. Is there a way to say “do this again and again”?"],
+ concept:"<b>Loop:</b> repeat a set of steps a number of times. Everything between “repeat” and “end” runs each time around.",
+ plots:[{},{},{},{},{}],tools:["plant","step","repeat"],max:4,
+ goal:s=>s.plots.every(p=>p.seed),
+ hint:"Repeat 5 times: plant a seed, then step to the next plot. That is 4 lines with the end.",
+ win:"Five little sprouts in a neat row. The loop did the work of ten commands."},
+{t:"Chapter 3: The Stubborn Flowers",
+ story:["Overnight, some plots bloomed by themselves. Yellow daisies 🌼 now stand where seeds were planned.","If Bolt plants on top of a daisy, it squashes it. Bolt needs to <b>look first</b>, then decide. Fill only the empty plots."],
+ concept:"<b>Conditional:</b> “if” runs its steps only when something is true. Otherwise Bolt skips them and moves on.",
+ plots:[{seed:1,pre:1},{},{seed:1,pre:1},{},{}],tools:["plant","step","repeat","if"],max:6,
+ goal:s=>s.plots.every(p=>p.seed),
+ hint:"Inside a repeat 5: if the plot is empty, plant. Then step. Remember to close the if with end.",
+ win:"Daisies untouched, gaps filled. Bolt made a choice at every plot."},
+{t:"Chapter 4: The Sprinkle Spell",
+ story:["Moss has had enough of repeating himself. “Plant a seed, then water it, again and again. Give it a name, Bolt, and call it when needed.”","Six plots. Every seed needs exactly 2 drops. You’ll teach Bolt a new word, <b>sprinkle</b>, then use it."],
+ concept:"<b>Function:</b> a named recipe. You define it once, then call it by name whenever you want it. Variables, loops, and ifs all work inside it.",
+ plots:[{},{},{},{},{},{}],tools:["set","plant","water","step","repeat","def","call"],need:1,
+ goal:s=>s.plots.every(p=>p.seed&&p.water==2),
+ hint:"Set drops to 2. Define sprinkle (plant, water, end). Then repeat 6: call sprinkle, step, end.",
+ win:"Six blooming plots. “Sprinkle!” says Moss, delighted. You taught a machine a new word."}
+];
+const LAB={step:"step to the next plot",plant:"plant a seed",water:"pour water (uses drops)",set:"set drops to ",repeat:"repeat ",if:"if the plot is empty",def:"define sprinkle",call:"call sprinkle",end:"end"};
+const OPEN=["repeat","if","def"];
+let li=0,prog=[],busy=false,timer=null;
+const $=i=>document.getElementById(i);
+function fresh(){return {pos:0,drops:1,err:"",plots:LV[li].plots.map(p=>({seed:!!p.seed,pre:!!p.pre,water:0}))}}
+let view=fresh();
+function label(l){const k=l.k;return LAB[k]+(k=="set"?l.n:k=="repeat"?l.n+" times":"")}
+function load(){
+ const L=LV[li];busy=false;clearTimeout(timer);prog=[];view=fresh();
+ $("story").innerHTML="<h2>"+L.t+"</h2>"+L.story.map(x=>"<p>"+x+"</p>").join("")+'<p class="concept">'+L.concept+"</p>";
+ $("dots").innerHTML=LV.map((_,i)=>'<i class="'+(i<li?"on":i==li?"cur":"")+'"></i>').join("");
+ const T=$("tools");T.innerHTML="";
+ L.tools.concat(["end"]).forEach(k=>{
+  if(k=="end"&&!L.tools.some(t=>OPEN.includes(t)))return;
+  const d=document.createElement("div");d.className="tool";
+  let sel=null;
+  if(k=="set"||k=="repeat"){sel=document.createElement("select");sel.setAttribute("aria-label","number");
+   for(let n=1;n<=(k=="set"?5:6);n++)sel.add(new Option(n,n));
+   if(k=="repeat")sel.value=LV[li].plots.length>1?LV[li].plots.length:3;}
+  const b=document.createElement("button");b.textContent=k=="set"?"set drops to…":k=="repeat"?"repeat … times":LAB[k];
+  b.onclick=()=>{if(busy)return;if(L.max&&prog.length>=L.max){say("That’s the most lines Bolt’s job allows ("+L.max+"). Try a shorter way.","bad");return}
+   prog.push({k,n:sel?+sel.value:0});reset()};
+  d.append(b);if(sel)d.append(sel);T.append(d)});
+ $("next").hidden=true;$("run").disabled=false;
+ $("lim").textContent=L.max?"Shed rule: at most "+L.max+" lines.":"No line limit this time.";
+ say("Build your program, then press Run.");draw()}
+function reset(){view=fresh();say("Build your program, then press Run.");draw()}
+function say(t,c){const m=$("msg");m.className="msg "+(c||"");m.innerHTML=t}
+function draw(hi){
+ const g=$("garden");g.innerHTML="";
+ view.plots.forEach((p,i)=>{const d=document.createElement("div");d.className="plot";
+  const e=!p.seed?"🟫":p.pre?"🌼":p.water>0?"🌷":"🌱";
+  d.innerHTML=(i==view.pos?'<div class="bolt">🤖</div>':"")+'<div class="g">'+e+'</div><div class="w">'+(p.water?"💧×"+p.water:"")+"</div>";g.append(d)});
+ g.setAttribute("aria-label","Bolt is at plot "+(view.pos+1)+" of "+view.plots.length);
+ const P=$("prog");
+ if(!prog.length){P.innerHTML='<div class="ln empty">Tap commands on the left to add them here.</div>';return}
+ let dp=0;P.innerHTML=prog.map((l,i)=>{if(l.k=="end")dp=Math.max(0,dp-1);
+  const h='<div class="ln'+(i===hi?" hi":"")+'" style="margin-left:'+dp*18+'px">'+label(l)+(OPEN.includes(l.k)?":":"")+"</div>";
+  if(OPEN.includes(l.k))dp++;return h}).join("")}
+function parse(){const root=[],st=[root];
+ prog.forEach((l,i)=>{const nd={k:l.k,n:l.n,i,body:[]};
+  if(l.k=="end"){if(st.length>1)st.pop();return}
+  st[st.length-1].push(nd);if(OPEN.includes(l.k))st.push(nd.body)});return root}
+function simulate(){
+ const s=fresh(),fr=[],fn={};let steps=0;
+ const snap=i=>fr.push({s:JSON.parse(JSON.stringify(s)),i});
+ function ex(list){for(const nd of list){
+  if(s.err||++steps>500)return;snap(nd.i);
+  switch(nd.k){
+   case"step":s.pos=Math.min(s.pos+1,s.plots.length-1);break;
+   case"plant":if(s.plots[s.pos].seed){s.err="Oops, Bolt squashed a sprout. Only plant in empty plots."}else s.plots[s.pos].seed=true;break;
+   case"water":if(!s.plots[s.pos].seed){s.err="There’s nothing planted here to water."}else s.plots[s.pos].water+=s.drops;break;
+   case"set":s.drops=nd.n;break;
+   case"repeat":for(let k=0;k<nd.n;k++)ex(nd.body);break;
+   case"if":if(!s.plots[s.pos].seed)ex(nd.body);break;
+   case"def":fn.sprinkle=nd;break;
+   case"call":if(fn.sprinkle)ex(fn.sprinkle.body);else s.err="Bolt doesn’t know “sprinkle” yet. Define it before you call it.";break}
+  snap(nd.i)}}
+ ex(parse());return {fr,s}}
+function run(){
+ if(busy)return;const L=LV[li];
+ if(!prog.length){say("Add at least one command first.","bad");return}
+ view=fresh();draw();const {fr,s}=simulate();busy=true;$("run").disabled=true;let k=0;
+ (function tick(){
+  if(k<fr.length){view=fr[k].s;draw(fr[k].i);k++;timer=setTimeout(tick,fr.length>40?120:300);return}
+  busy=false;$("run").disabled=false;view=s;draw();
+  if(s.err){say(s.err+" Press Undo or Clear and try again.","bad");return}
+  if(!L.goal(s)){say("Bolt finished, but the garden isn’t right yet. Look at the plots and re-read the task. Stuck? Use the hint.","bad");return}
+  if(L.need&&!(prog.some(l=>l.k=="def")&&prog.some(l=>l.k=="call"))){say("The garden looks right, but this chapter asks you to define and call sprinkle.","bad");return}
+  say("<b>Chapter complete.</b> "+L.win,"ok");
+  const n=$("next");n.hidden=false;n.textContent=li<LV.length-1?"Next chapter":"Finish the story";dots(true)})()}
+function dots(){$("dots").children[li].className="on"}
+$("run").onclick=run;
+$("undo").onclick=()=>{if(!busy){prog.pop();reset()}};
+$("clear").onclick=()=>{if(!busy){prog=[];reset()}};
+$("hint").onclick=()=>say("<b>Hint:</b> "+LV[li].hint);
+$("next").onclick=()=>{if(li<LV.length-1){li++;load();scrollTo(0,0)}else{
+ $("story").innerHTML="<h2>The End, for now</h2><p>Moss finds his glasses. They were on his head all along. Mossgrove blooms, and Bolt has learned four words you taught it: <b>variables</b>, <b>loops</b>, <b>ifs</b>, and <b>functions</b>.</p><p class='concept'>These same four ideas power every program, from games to rockets. Come back anytime to replay a chapter.</p>";
+ $("next").textContent="Replay from the start";$("next").onclick=()=>{li=0;location.reload()}}};
+load();
+</script>
+</body>
+</html>
